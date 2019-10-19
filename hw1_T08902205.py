@@ -53,6 +53,7 @@ pd.set_option('display.max_columns', None)
 #===================== Prepare Data =============================#
 # Declare predictors
 predictors = [
+             'ID',
              'school',
              'sex',
              'age',
@@ -88,6 +89,7 @@ predictors = [
 
 # Neglect non-predictor columns
 df_train = df_train[predictors]
+df_train = df_train.drop('ID', axis = 1)
 
 binary_val_columns = ['school','sex','famsize','activities','higher','internet','romantic']
 
@@ -106,8 +108,6 @@ cutoff = int(0.8 * len(df_train))
 train_set = df_train.iloc[:cutoff]
 cv_set = df_train.iloc[cutoff:]
 
-normalizeVal = []
-
 y_train_set = train_set['G3']
 y_train = y_train_set.values
 y_test_set = cv_set['G3']
@@ -122,11 +122,14 @@ for column in train_set.columns:
     train_set[column] = (train_set[column] - mean) / std
     cv_set[column] = (cv_set[column] - mean) / std
 
+
 x_train = train_set.values
 x_test = cv_set.values
 
 #================== Linear Regression ===============#
 
+print(x_train.shape)
+print(y_train.shape)
 # Inverse Formula
 theta = np.linalg.pinv(x_train.T.dot(x_train)).dot(x_train.T).dot(y_train)
 # Predicted Y
@@ -201,6 +204,9 @@ predictors_clone = predictors.copy()
 predictors_clone.pop() # Remove G3
 
 df_test = df_test[predictors_clone]
+ids = df_test["ID"]
+df_test = df_test.drop("ID", axis = 1)
+
 
 for column in binary_val_columns:
     df_test = onehot_encoder(column, df_test)
@@ -227,7 +233,12 @@ x_test = np.concatenate( (bias_term, x_test), axis = 1 )
 
 y_predict_test = x_test.dot(theta_bayesian)
 
-print(y_predict_test)
+with open('T08902205_1.txt','w') as f:
+    for index, predicted_y in enumerate(y_predict_test):
+        row = str(ids[index]) + '\t' + str(predicted_y) + '\n'
+        f.write(row)
+
+
 
 
 
