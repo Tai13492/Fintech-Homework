@@ -10,25 +10,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 
-#def computePseudoInverse(X):
-#    U,D,V = np.linalg.svd(X)
-#    D_plus = np.zeros((X.shape[0], X.shape[1])).T
-#    D_plus[:D.shape[0], :D.shape[0]] = np.linalg.inv(np.diag(D))
-#    X_plus = V.T.dot(D_plus).dot(U.T)
-#    return X_plus
-
 def computeRMSE(y, y_predict):
     Zigma = np.square(y_predict - y).sum()
     return (Zigma/y.size) ** (1/2)
-    
-#def normalizeColumn(column_name, target):
-#    clone = target.copy()
-#    mean = clone[column_name].mean()
-#    std = clone[column_name].std()
-#    clone[column_name] = clone[column_name] - mean
-#    clone[column_name] = clone[column_name]/std
-#    return clone
-    
+
 
 def onehot_encoder(column_name, target):
     clone = target.copy()
@@ -57,26 +42,13 @@ predictors = [
              'school',
              'sex',
              'age',
-#             'address', # U,R
-             'famsize', # GT3 LT3
-#             'Pstatus', # T,A
-#             'Medu', # 1 2 3 4
-#             'Fedu', # 0 2 3 3
-#             'Mjob', # other services teacher
-#             'Fjob',
-#             'reason', #reputation course home other
-#             'guardian', #mother other father
-#             'traveltime', # 1 2 3 4
-             'studytime', #1 2 3 4
-             'failures',# 0 1
-#             'schoolsup', #no yes
-#             'famsup', # no yes
-#             'paid', # no yes
+             'famsize', 
+             'studytime', 
+             'failures',
              'activities',
-#             'nursery',
              'higher',
              'internet',
-             'romantic', # no yes
+             'romantic', 
              'famrel',
              'freetime',
              'goout',
@@ -127,9 +99,6 @@ x_train = train_set.values
 x_test = cv_set.values
 
 #================== Linear Regression ===============#
-
-print(x_train.shape)
-print(y_train.shape)
 # Inverse Formula
 theta = np.linalg.pinv(x_train.T.dot(x_train)).dot(x_train.T).dot(y_train)
 # Predicted Y
@@ -217,14 +186,6 @@ for column in df_test.columns:
     df_test[column] = (df_test[column] - mean) / std    
 
 x_test = df_test.values
-
-#reg_term = 3 * np.eye(x_train_with_bias.shape[1])
-#reg_term[0][0] = 0
-#
-#theta_bayesian_optimize_alpha = np.linalg.pinv(x_train_with_bias.T.dot(x_train_with_bias) + reg_term).dot(x_train_with_bias.T).dot(y_train)
-#y_predict_bayesian_test = x_test_with_bias.dot(theta_bayesian_optimize_alpha)
-#RMSE_linalg_bayesian_optimize_alpha = computeRMSE(y_test, y_predict_bayesian_test)
-#print("RMSE of bayesian with optimize alpha " + str(RMSE_linalg_bayesian_optimize_alpha))
 
 
 bias_term = np.ones( (x_test.shape[0], 1) )
