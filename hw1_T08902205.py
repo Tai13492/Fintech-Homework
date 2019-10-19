@@ -10,29 +10,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
 
-def computePseudoInverse(X):
-    U,D,V = np.linalg.svd(X)
-    D_plus = np.zeros((X.shape[0], X.shape[1])).T
-    D_plus[:D.shape[0], :D.shape[0]] = np.linalg.inv(np.diag(D))
-    X_plus = V.T.dot(D_plus).dot(U.T)
-    return X_plus
+#def computePseudoInverse(X):
+#    U,D,V = np.linalg.svd(X)
+#    D_plus = np.zeros((X.shape[0], X.shape[1])).T
+#    D_plus[:D.shape[0], :D.shape[0]] = np.linalg.inv(np.diag(D))
+#    X_plus = V.T.dot(D_plus).dot(U.T)
+#    return X_plus
 
 def computeRMSE(y, y_predict):
     Zigma = np.square(y_predict - y).sum()
     return (Zigma/y.size) ** (1/2)
     
-def normalizeColumn(column_name):
-    global df_train
-    mean = df_train[column_name].mean()
-    std = df_train[column_name].std()
-    df_train[column_name] = df_train[column_name] - mean
-    df_train[column_name] = df_train[column_name]/std
+#def normalizeColumn(column_name, target):
+#    clone = target.copy()
+#    mean = clone[column_name].mean()
+#    std = clone[column_name].std()
+#    clone[column_name] = clone[column_name] - mean
+#    clone[column_name] = clone[column_name]/std
+#    return clone
     
 
-def onehot_encoder(column_name):
-    global df_train
+def onehot_encoder(column_name, target):
+    clone = target.copy()
     # Transform binary columns 
-    one_hot = pd.get_dummies(df_train[column_name])
+    one_hot = pd.get_dummies(clone[column_name])
     
     # Rename column names using original column_name
     rename_one_hot_columns = []
@@ -41,7 +42,8 @@ def onehot_encoder(column_name):
     one_hot.columns = rename_one_hot_columns
     
     # Transform binary columns to one-hot encoding vectors.
-    df_train = pd.concat([df_train.drop(column_name,axis = 1), one_hot], axis = 1)
+    clone = pd.concat([clone.drop(column_name,axis = 1), one_hot], axis = 1)
+    return clone
 
 # Import the training data
 df_train = pd.read_csv('train.csv')
@@ -51,27 +53,26 @@ pd.set_option('display.max_columns', None)
 #===================== Prepare Data =============================#
 # Declare predictors
 predictors = [
-             'ID',
              'school',
              'sex',
              'age',
-             'address', # U,R
+#             'address', # U,R
              'famsize', # GT3 LT3
-             'Pstatus', # T,A
-             'Medu', # 1 2 3 4
-             'Fedu', # 0 2 3 3
-             'Mjob', # other services teacher
-             'Fjob',
-             'reason', #reputation course home other
-             'guardian', #mother other father
-             'traveltime', # 1 2 3 4
+#             'Pstatus', # T,A
+#             'Medu', # 1 2 3 4
+#             'Fedu', # 0 2 3 3
+#             'Mjob', # other services teacher
+#             'Fjob',
+#             'reason', #reputation course home other
+#             'guardian', #mother other father
+#             'traveltime', # 1 2 3 4
              'studytime', #1 2 3 4
              'failures',# 0 1
-             'schoolsup', #no yes
-             'famsup', # no yes
-             'paid', # no yes
+#             'schoolsup', #no yes
+#             'famsup', # no yes
+#             'paid', # no yes
              'activities',
-             'nursery',
+#             'nursery',
              'higher',
              'internet',
              'romantic', # no yes
@@ -88,49 +89,46 @@ predictors = [
 # Neglect non-predictor columns
 df_train = df_train[predictors]
 
-# Declare columns to be coded
-binary_val_columns = ['school','sex','address','famsize','Pstatus','Mjob','Fjob','reason','guardian',
-                      'schoolsup','famsup','paid','activities','nursery','higher','internet','romantic']
+binary_val_columns = ['school','sex','famsize','activities','higher','internet','romantic']
 
 # Encode all columns that needs to be encoded
 for column in binary_val_columns:
-    onehot_encoder(column)
+    df_train = onehot_encoder(column, df_train)
 
-# Declare columns to be normalized
-columns_not_to_be_normalized = binary_val_columns + ['ID','G3']
-columns_to_be_normalized = list(set(predictors) - set(columns_not_to_be_normalized))
+columns_to_be_normalized = ['age','studytime','failures','famrel','freetime','goout','Dalc','Walc','health','absences']
 
-for column in columns_to_be_normalized:
-    normalizeColumn(column)
 
 #================= Separate Train and Test =======================
 
 # Shuffle data, 80% training, 20% testing
-df_train = df_train.drop('ID', axis = 1)
-zzdf_train = shuffle(df_train)
+df_train = shuffle(df_train)
 cutoff = int(0.8 * len(df_train))
-df_train_train = df_train.iloc[:cutoff]
-df_train_test = df_train.iloc[cutoff:]
+train_set = df_train.iloc[:cutoff]
+cv_set = df_train.iloc[cutoff:]
 
-# Transform training sets into numpy array
-y_train = df_train_train['G3']
-print(df_train_train.head(2))
-df_train_train = df_train_train.drop('G3',axis = 1)
-x_train = df_train_train.values
-y_train = y_train.values
+normalizeVal = []
 
-# Transform testing sets into numpy array
-y_test = df_train_test['G3']
-df_train_test = df_train_test.drop('G3',axis = 1)
-x_test = df_train_test.values
-y_test = y_test.values
+y_train_set = train_set['G3']
+y_train = y_train_set.values
+y_test_set = cv_set['G3']
+y_test = y_test_set.values
+
+train_set = train_set.drop('G3',axis = 1)
+cv_set = cv_set.drop('G3',axis = 1)
+
+for column in train_set.columns:
+    mean = train_set[column].mean()
+    std = train_set[column].std()
+    train_set[column] = (train_set[column] - mean) / std
+    cv_set[column] = (cv_set[column] - mean) / std
+
+x_train = train_set.values
+x_test = cv_set.values
 
 #================== Linear Regression ===============#
 
 # Inverse Formula
-A = x_train.T.dot(x_train)
-A_plus = computePseudoInverse(A)
-theta = A_plus.dot(x_train.T).dot(y_train)
+theta = np.linalg.pinv(x_train.T.dot(x_train)).dot(x_train.T).dot(y_train)
 # Predicted Y
 y_predict = x_test.dot(theta)
 # RMSE of 1b
@@ -138,20 +136,12 @@ RMSE_linalg_no_reg_test = computeRMSE(y_test, y_predict)
 print("RMSE of 1b: " + str(RMSE_linalg_no_reg_test))
 
 #=============== Linear Regression with reg ==========#
+
 # Inverse Formula with regularization
-#A = x_train.T.dot(x_train) + (0.5 * np.eye(x_train.shape[1]))
-#A_plus = computePseudoInverse(A)
-theta_reg = np.linalg.inv(x_train.T.dot(x_train) + 0.5 * np.identity(x_train.shape[1]) ).dot(x_train.T).dot(y_train)
+theta_reg = np.linalg.pinv(x_train.T.dot(x_train) + 0.5 * np.identity(x_train.shape[1]) ).dot(x_train.T).dot(y_train)
 y_predict_reg = x_test.dot(theta_reg)
 RMSE_linalg_with_reg_test = computeRMSE(y_test,y_predict_reg)
 print("RMSE of 1c: " + str(RMSE_linalg_with_reg_test))
-#theta_reg = np.linalg.inv( x_train.T.dot(x_train) + (0.5 * np.eye(x_train.shape[1])) ).dot(x_train.T).dot(y_train)
-# Predict Y with regularization
-#y_predict_test_with_reg = x_test.dot(theta_reg) 
-# y_ predict_test_with_reg2 = x_test.dot(theta) + theta.T.dot(theta)
-# RMSE of 1c
-#RMSE_linalg_with_reg_test = computeRMSE(y_test,y_predict_test_with_reg)
-#RMSE_linalg_with_reg_test2 = computeRMSE(y_test, y_predict_test_with_reg2)
 
 #================ Add Bias Term to x_train and x_test =====#
 x_train_with_bias = x_train[:]
@@ -167,11 +157,8 @@ x_test_with_bias = np.concatenate( (test_bias, x_test_with_bias), axis = 1 )
 reg_term = 0.5 * np.eye(x_train_with_bias.shape[1])
 reg_term[0][0] = 0
 
-A = x_train_with_bias.T.dot(x_train_with_bias) + reg_term
-A_plus = computePseudoInverse(A)
-theta_reg_bias = A_plus.dot(x_train_with_bias.T).dot(y_train)
+theta_reg_bias = np.linalg.pinv(x_train_with_bias.T.dot(x_train_with_bias) + reg_term).dot(x_train_with_bias.T).dot(y_train)
 y_predict_test_with_reg_with_bias = x_test_with_bias.dot(theta_reg_bias)
-#theta_reg_bias = np.linalg.inv(x_train_with_bias.T.dot(x_train_with_bias) + reg_term).dot(x_train_with_bias.T).dot(y_train)
 RMSE_linalg_reg_bias_test = computeRMSE(y_test, y_predict_test_with_reg_with_bias)
 print("RMSE of 1d: " + str(RMSE_linalg_reg_bias_test))
 
@@ -179,11 +166,9 @@ print("RMSE of 1d: " + str(RMSE_linalg_reg_bias_test))
 reg_term = 1 * np.eye(x_train_with_bias.shape[1])
 reg_term[0][0] = 0
 
-A = x_train_with_bias.T.dot(x_train_with_bias) + reg_term
-A_plus = computePseudoInverse(A)
-theta_bayesian = A_plus.dot(x_train_with_bias.T).dot(y_train)
+theta_bayesian = np.linalg.pinv(x_train_with_bias.T.dot(x_train_with_bias) + reg_term).dot(x_train_with_bias.T).dot(y_train)
 y_predict_bayesian = x_test_with_bias.dot(theta_bayesian)
-RMSE_linalg_bayesian = computeRMSE(y_test,y_predict_bayesian)
+RMSE_linalg_bayesian = computeRMSE(y_test, y_predict_bayesian)
 print("RMSE of 1e: " + str(RMSE_linalg_bayesian))
 
 #============== Plot ====================#
