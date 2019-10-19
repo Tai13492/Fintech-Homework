@@ -193,8 +193,41 @@ plt.plot(X,Y_bayesian,'orange',label="Bayesian Liinear Regression" + str(round(R
 plt.legend()
 plt.show()
 
-#df_test = pd.read_csv('test_no_G3.csv')
-#df_test = df_test[predictors]
+#============== Apply our model on Test Set ====================#
+
+df_test = pd.read_csv('test_no_G3.csv')
+
+predictors_clone = predictors.copy()
+predictors_clone.pop() # Remove G3
+
+df_test = df_test[predictors_clone]
+
+for column in binary_val_columns:
+    df_test = onehot_encoder(column, df_test)
+
+for column in df_test.columns:
+    mean = df_test[column].mean()
+    std = df_test[column].std()
+    df_test[column] = (df_test[column] - mean) / std    
+
+x_test = df_test.values
+
+#reg_term = 3 * np.eye(x_train_with_bias.shape[1])
+#reg_term[0][0] = 0
+#
+#theta_bayesian_optimize_alpha = np.linalg.pinv(x_train_with_bias.T.dot(x_train_with_bias) + reg_term).dot(x_train_with_bias.T).dot(y_train)
+#y_predict_bayesian_test = x_test_with_bias.dot(theta_bayesian_optimize_alpha)
+#RMSE_linalg_bayesian_optimize_alpha = computeRMSE(y_test, y_predict_bayesian_test)
+#print("RMSE of bayesian with optimize alpha " + str(RMSE_linalg_bayesian_optimize_alpha))
+
+
+bias_term = np.ones( (x_test.shape[0], 1) )
+
+x_test = np.concatenate( (bias_term, x_test), axis = 1 )
+
+y_predict_test = x_test.dot(theta_bayesian)
+
+print(y_predict_test)
 
 
 
